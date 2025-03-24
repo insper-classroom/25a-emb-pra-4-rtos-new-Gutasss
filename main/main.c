@@ -35,9 +35,9 @@ void pin_callback(uint gpio, uint32_t events) {
 void trigger_task(void *pvParameters) {
     while (1) {
         gpio_put(TRIGGER_PIN, 0);
-        sleep_us(2);
+        vTaskDelay(pdMS_TO_TICKS(2));
         gpio_put(TRIGGER_PIN, 1);
-        sleep_us(10);
+        vTaskDelay(pdMS_TO_TICKS(10));
         gpio_put(TRIGGER_PIN, 0);
 
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -67,21 +67,21 @@ void oled_task(void *pvParameters) {
 
     float distance;
     char buffer[20];
-    int failure_count = 0;
-    const int FAILURE_THRESHOLD = 3;
+    int contador_falhas = 0;
+    const int maximo_falha = 3;
 
     while (1) {
         if (xQueueReceive(xQueueDistance, &distance, portMAX_DELAY) == pdTRUE) {
             gfx_clear_buffer(&disp);
             if (distance < 0) {
-                failure_count++;
-                if (failure_count >= FAILURE_THRESHOLD) {
+                contador_falhas++;
+                if (contador_falhas >= maximo_falha) {
                     gfx_draw_string(&disp, 0, 0, 1, "Sensor Falhou");
                 } else {
                     gfx_draw_string(&disp, 0, 0, 1, "Falha na leitura");
                 }
             } else {
-                failure_count = 0;
+                contador_falhas = 0;
                 sprintf(buffer, "Dist: %.1f cm", distance);
                 gfx_draw_string(&disp, 0, 0, 1, buffer);
 
