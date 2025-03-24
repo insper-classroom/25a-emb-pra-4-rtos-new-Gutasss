@@ -28,9 +28,7 @@ void pin_callback(uint gpio, uint32_t events) {
     else if (events & GPIO_IRQ_EDGE_FALL) {
         end_time = time_us_64();
         uint64_t delta_t = end_time - start_time;
-        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-        xQueueSendFromISR(xQueueTime, &delta_t, &xHigherPriorityTaskWoken);
-        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        xQueueSendFromISR(xQueueTime, &delta_t, 0);
     }
 }
 
@@ -108,7 +106,6 @@ int main(void) {
     gpio_set_dir(ECHO_PIN, GPIO_IN);
     gpio_set_pulls(ECHO_PIN, false, true);
 
-    // Configura interrupções no pino de ECHO para detecção de subida e descida
     gpio_set_irq_enabled_with_callback(
         ECHO_PIN,
         GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL,
@@ -116,11 +113,9 @@ int main(void) {
         pin_callback
     );
 
-    // Cria as filas
     xQueueTime = xQueueCreate(5, sizeof(uint64_t));
     xQueueDistance = xQueueCreate(5, sizeof(float));
 
-    // Cria as tasks
     xTaskCreate(trigger_task, "TriggerTask", 256, NULL, 1, NULL);
     xTaskCreate(echo_task,    "EchoTask",    256, NULL, 1, NULL);
     xTaskCreate(oled_task,    "OLEDTask",   4096, NULL, 1, NULL);
